@@ -1,165 +1,102 @@
+const apiURL = new FetchApi('https://games-app-siit.herokuapp.com');
 
-// appStart()
+async function showGames(){
+    const arrayOfGames = await apiUrl.getGamesList();
+    const gameContainer = document.querySelector('.container')
+    for(var i = 0; i < arrayOfGames.length; i++) {
+        const game = new Game(arrayOfGames[i]._id, arrayOfGames[i].title, arrayOfGames[i].description, arrayOfGames[i].imageUrl);
+        const gameDiv = game.show();
+        gameContainer.appendChild(gameDiv);
 
-// // getGamesList().then(arrayOfGames =>{
-// //     for(var i = 0; i < arrayOfGames.length; i++) {
-// //         createDomElement(arrayOfGames[i]);
-// //     }
-// // });
+        document.getElementById(`${game._id}`).addEventListener("click", async function(){
+            if(event.target.classList.contains('delete-btn')){
+                const gameDiv = event.target.parentElement;
+                //const delGame = await apiUrl.deleteGame(gameDiv.getAttribute('id'));
+                console.log(apiUrl);
+                removeDeletedElementFromDOM(document.querySelector('.gameELement'));
+            } else if(event.target.classList.contains('edit-btn')){
+                createDomElement((event.target.parentElement));
+            }
+        })
+    }
+}
 
-const apiURL = "https://games-app-siit.herokuapp.com";
-
-
-
-
-
-
-function createDomElement(gameObj){
-    var container1 = document.querySelector('.container');
-    const gameELement = document.createElement("div");
-    gameELement.className = "game-box";
-    gameELement.setAttribute("id", gameObj._id)
-
-
-    gameELement.innerHTML = `<h1>${gameObj.title}</h1> 
-                        <img src="${gameObj.imageUrl}" />
-                        <p>${gameObj.description}</p> 
-                        <button class="delete-btn" id="${gameObj._id}">Delete Game</button>
-                        <button class="update-btn" id="${gameObj._id}">Edit Game</button>`;    
-
-
+function createDomElement(gameContainer){
+    const gameTitle = gameContainer.querySelector('h1');
+    const gameDescription = gameContainer.querySelector('p');
+    const gameImageURL = gameContainer.querySelector('img');
     const updatedGameElement = document.createElement('form');
-    updatedGameElement.id = "updateForm"
-    updatedGameElement.innerHTML = `
-                                        <label for="newGameTitle">Title *</label>
-                                        <input type="text"  name="newGameTitle" id="newGameTitle" value = "${gameObj.title}"/>
-
-                                        <label for="newGameDescription">Description</label>
-                                        <textarea name="newGameDescription" id="newGameDescription">"${gameObj.description}"</textarea>
-
-                                        <label for="newGameImageUrl">Image URL *</label>
-                                        <input type="text" name="newGameImageUrl" id="newGameImageUrl" value = "${gameObj.imageUrl}"/>
-
-                                        <button class="save-btn">Save Changes</button>
-                                        <button class="cancel-btn">Cancel</button>
-                                    `;
-
-
-
-    container1.appendChild(gameELement);
-    document.getElementById(`${gameObj._id}`).addEventListener("click", function(event){
-
-        
-        if(event.target.classList.contains("delete-btn")){
-            deleteGame(event.target.getAttribute("id"), function(apiResponse){
-                    console.log(apiResponse);
-                    const editForm = event.target.parentElement;
-                    removeDeletedElementFromDOM(editForm);
-                })
-
-
-        } else if(event.target.classList.contains("update-btn")){
-            const editForm = event.target.parentElement;
-            editForm.appendChild(updatedGameElement);
-        } else if(event.target.classList.contains('cancel-btn')){
-            const editForm = event.target.parentElement;
-            removeDeletedElementFromDOM(editForm);
-        } else if(event.target.classList.contains("save-btn")){
-            const editForm = event.target.parentElement;
-            event.preventDefault();
-            newGameVersion(editForm.parentElement);
-            removeDeletedElementFromDOM(editForm);
-        }
+    updatedGameElement.id = "updateForm";
+    updatedGameElement.innerHTML = `<label for="newGameTitle">Title *</label>
+                                <input type="text" value="${gameTitle.textContent}" name="newGameTitle" id="newGameTitle" />
+                                <label for="newGameDescription">Description</label>
+                                <textarea name="newGameDescription" id="newGameDescription">${gameDescription.textContent}</textarea>
+                                <label for="newGameImageUrl">Image URL *</label>
+                                <input type="text" name="newGameImageUrl" id="newGameImageUrl" value="${gameImageURL.src}"/>
+                                <button class="updateBtn">Save Changes</button>
+                                <button class="cancelBtn">Cancel</button>`;
+    gameContainer.appendChild(updatedGameElement);
+    gameContainer.querySelector('.cancel-btn').addEventListener('click', function(event){
+        event.preventDefault();
+        removeDeletedElementFromDOM(updatedGameElement);
     });
-}
 
-function newGameVersion(gameELement){
-    const updatedGameTitle = document.getElementById("newGameTitle").value;
-    const updatedGameDescription = document.getElementById("newGameDescription").value;
-    const updatedGameImageUrl = document.getElementById("newGameImageUrl").value;
+    gameContainer.querySelector('.update-btn').addEventListener('click', function(){
+        const updatedGameTitle = document.querySelector('#newGameTitle');
+        const updatedGameDescription = document.querySelector('#newGameDescription');
+        const updatedGameImageUrl = document.querySelector('#newGameImageUrl');
 
-    gameELement.querySelector('h1').innerHTML = updatedGameTitle;
-    gameELement.querySelector('p').innerHTML = updatedGameDescription;
-    gameELement.querySelector('img').innerHTML = updatedGameImageUrl;
+        const urlencoded = new URLSearchParams();
+        urlencoded.append("title", updatedGameTitle.value);
+        urlencoded.append("description", updatedGameDescription.value);
+        urlencoded.append("imageUrl", updatedGameImageUrl.value);
+        
+        removeDeletedElementFromDOM(updateGameElement);
+        (async function(){
+            const editForm = await apiUrl.updateGameRequest(gameContainer.id, urlencoded);
+            return editForm;
+        })();
+    });
+        
+};
 
-    var urlencoded = new URLSearchParams();
-    urlencoded.append("title", updatedGameTitle);
-    urlencoded.append("description", updatedGameDescription);
-    urlencoded.append("imageUrl", updatedGameImageUrl);
-
-    console.log(gameELement);
-    updateGameRequest(gameELement.getAttribute('id'), urlencoded, createDomElement);
-
-
-}
+showGames();
 
 function removeDeletedElementFromDOM(domElement){
     domElement.remove();
-}
-
-
-
-
-
-
-
-function validateFormElement(inputElement, errorMessage){
-    if(inputElement.value === "") {
-        if(!document.querySelector('[rel="' + inputElement.id + '"]')){
-            buildErrorMessage(inputElement, errorMessage);
-        }
-    } else {
-        if(document.querySelector('[rel="' + inputElement.id + '"]')){
-            console.log("the error is erased!");
-            document.querySelector('[rel="' + inputElement.id + '"]').remove();
-            inputElement.classList.remove("inputError");
-        }
-    }
-}
-
-function validateReleaseTimestampElement(inputElement, errorMessage){
-    if(isNaN(inputElement.value) && inputElement.value !== "") {
-        buildErrorMessage(inputElement, errorMessage);
-    }
-}
-
-function buildErrorMessage(inputEl, errosMsg){
-    inputEl.classList.add("inputError");
-    const errorMsgElement = document.createElement("span");
-    errorMsgElement.setAttribute("rel", inputEl.id);
-    errorMsgElement.classList.add("errorMsg");
-    errorMsgElement.innerHTML = errosMsg;
-    inputEl.after(errorMsgElement);
-}
-
+};
 
 document.querySelector(".submitBtn").addEventListener("click", function(event){
     event.preventDefault();
+    const newGame = new createGameForm(document.getElementById("gameTitle"),
+                                        document.getElementById("gameDescription"),
+                                        document.getElementById("gameGenre"),
+                                        document.getElementById("gamePublisher"),
+                                        document.getElementById("gameImageUrl"),
+                                        document.getElementById("gameRelease"));
 
-    const gameTitle = document.getElementById("gameTitle");
-    const gameDescription = document.getElementById("gameDescription");
-    const gameGenre = document.getElementById("gameGenre");
-    const gamePublisher = document.getElementById("gamePublisher");
-    const gameImageUrl = document.getElementById("gameImageUrl");
-    const gameRelease = document.getElementById("gameRelease");
 
-    validateFormElement(gameTitle, "The title is required!");
-    validateFormElement(gameGenre, "The genre is required!");
-    validateFormElement(gameImageUrl, "The image URL is required!");
-    validateFormElement(gameRelease, "The release date is required!");
+    newGame.validateFormElement(newGame.gameTitle, "The title is required!");
+    newGame.validateFormElement(newGame.gameGenre, "The genre is required!");
+    newGame.validateFormElement(newGame.gameImageUrl, "The image URL is required!");
+    newGame.validateFormElement(newGame.gameRelease, "The release date is required!");
 
-    validateReleaseTimestampElement(gameRelease, "The release date you provided is not a valid timestamp!");
+    newGame.validateReleaseTimestampElement(newGame.gameRelease, "The release date you provided is not a valid timestamp!");
 
-    if(gameTitle.value !== "" && gameGenre.value !== "" && gameImageUrl.value !== "" && gameRelease.value !== "") {
+    if(newGame.gameTitle.value !== "" && newGame.gameGenre.value !== "" && newGame.gameImageUrl.value !== "" && newGame.gameRelease.value !== "") {
         var urlencoded = new URLSearchParams();
-        urlencoded.append("title", gameTitle.value);
-        urlencoded.append("releaseDate", gameRelease.value);
-        urlencoded.append("genre", gameGenre.value);
-        urlencoded.append("publisher", gamePublisher.value);
-        urlencoded.append("imageUrl", gameImageUrl.value);
-        urlencoded.append("description", gameDescription.value);
+        urlencoded.append("title", newGame.gameTitle.value);
+        urlencoded.append("releaseDate", newGame.gameRelease.value);
+        urlencoded.append("genre", newGame.gameGenre.value);
+        urlencoded.append("publisher", newGame.gamePublisher.value);
+        urlencoded.append("imageUrl", newGame.gameImageUrl.value);
+        urlencoded.append("description", newGame.gameDescription.value);
 
-        createGameRequest(urlencoded, createDomElement);
+       (async function createGame(){
+           const request = await apiUrl.createGameRequest(urlencoded)
+           console.log(request);
+           const newGameDom = newGame.displayCreatedGame(request);
+           document.querySelector('.container').appendChild(newGameDom);
+       })
     }
 })
-
