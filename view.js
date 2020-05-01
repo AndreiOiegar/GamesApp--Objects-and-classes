@@ -13,7 +13,7 @@ async function showGames(){
                 const gameDiv = event.target.parentElement;
                 //const delGame = await apiUrl.deleteGame(gameDiv.getAttribute('id'));
                 console.log(apiURL);
-                removeDeletedElementFromDOM(document.querySelector('.gameELement'));
+                removeDeletedElementFromDOM(document.querySelector('.game-box'));
             } else if(event.target.classList.contains('update-btn')){
                 createDomElement((event.target.parentElement));
             }
