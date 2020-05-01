@@ -1,65 +1,39 @@
-function FetchApi(url){
-    this.url = apiURL;
-    this.getGamesList();
-    this.deleteGame();
-    this.createGameRequest();
- 
-
+function FetchApi(apiUrl){
+    this.apiUrl = apiUrl;
 }
-FetchApi.prototype.getGamesList= function(callbackFunction){
-    fetch(apiURL + "/games", {
+
+FetchApi.prototype.getGamesList = function(){
+    return fetch(`${this.apiUrl}` + "/games", {
         method: "GET",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
-        }
-    }).then(function(response){
-        console.log('aduce jocurile ')
-        return response.json();
-    }).then(function(arrayOfGames){
-        callbackFunction(arrayOfGames);
-    });
-
+        } 
+    })
+    .then(response => response.json());
 }
 
-FetchApi.prototype.deleteGame= function(gameID,callbackFunction){
-    fetch(apiURL + "/games/" + gameID, {
-        method: "DELETE"
-    }).then(function(r){
-        return r.text();
-    }).then(function(apiresponse){
-        callbackFunction(apiresponse);
-    });
-
+FetchApi.prototype.deleteGame = function(gameID){
+    return fetch(`${this.apiUrl}` + "/games/" + gameID, {
+        method: "DELETE",
+    }).then(r => r.text());
 }
 
-FetchApi.prototype.createGameRequest = function (gameObject,callbackCreateGame){
-    fetch(apiURL + "/games", {
+FetchApi.prototype.createGameRequest = function(){
+    return fetch(`${this.apiUrl}` + "/games/", {
         method: "POST",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
         },
         body: gameObject
-    }).then(function(response){
-        return response.json();
-    }).then(function(createdGame){
-        console.log(createdGame);
-        callbackCreateGame(createdGame);
-    });
-
+    }).then(response => response.json());
 }
 
-FetchApi.prototype.updateGameRequest = function (updatedGameObj,callbackCreateGame){
-    fetch(apiURL + "/games", {
-        method: "POST",
+FetchApi.prototype.updateGameRequest = function(gameId, updatedGameObj){
+    return fetch(`${this.apiUrl}` + "/games/" + gameId, {
+        method: "PUT",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
         },
-        body: gameObject
-    }).then(function(response){
-        return response.json();
-    }).then(function(updatedGame){
-        console.log(updatedGame);
-        callbackCreateGame(updatedGame);
-    });
-
+        body: updatedGameObj
+    }).then(response => response.json())
 }

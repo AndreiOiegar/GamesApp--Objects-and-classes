@@ -1,7 +1,7 @@
-const apiURL = new FetchApi('https://games-app-siit.herokuapp.com');
+var apiURL = new FetchApi('https://games-app-siit.herokuapp.com');
 
 async function showGames(){
-    const arrayOfGames = await apiUrl.getGamesList();
+    const arrayOfGames = await apiURL.getGamesList();
     const gameContainer = document.querySelector('.container')
     for(var i = 0; i < arrayOfGames.length; i++) {
         const game = new Game(arrayOfGames[i]._id, arrayOfGames[i].title, arrayOfGames[i].description, arrayOfGames[i].imageUrl);
@@ -12,9 +12,9 @@ async function showGames(){
             if(event.target.classList.contains('delete-btn')){
                 const gameDiv = event.target.parentElement;
                 //const delGame = await apiUrl.deleteGame(gameDiv.getAttribute('id'));
-                console.log(apiUrl);
+                console.log(apiURL);
                 removeDeletedElementFromDOM(document.querySelector('.gameELement'));
-            } else if(event.target.classList.contains('edit-btn')){
+            } else if(event.target.classList.contains('update-btn')){
                 createDomElement((event.target.parentElement));
             }
         })
@@ -27,21 +27,27 @@ function createDomElement(gameContainer){
     const gameImageURL = gameContainer.querySelector('img');
     const updatedGameElement = document.createElement('form');
     updatedGameElement.id = "updateForm";
-    updatedGameElement.innerHTML = `<label for="newGameTitle">Title *</label>
-                                <input type="text" value="${gameTitle.textContent}" name="newGameTitle" id="newGameTitle" />
-                                <label for="newGameDescription">Description</label>
-                                <textarea name="newGameDescription" id="newGameDescription">${gameDescription.textContent}</textarea>
-                                <label for="newGameImageUrl">Image URL *</label>
-                                <input type="text" name="newGameImageUrl" id="newGameImageUrl" value="${gameImageURL.src}"/>
-                                <button class="updateBtn">Save Changes</button>
-                                <button class="cancelBtn">Cancel</button>`;
+    updatedGameElement.innerHTML = `
+                                    <label for="newGameTitle">Title *</label>
+                                    <input type="text" value="${gameTitle.textContent}" name="newGameTitle" id="newGameTitle" />
+
+                                    <label for="newGameDescription">Description</label>
+                                    <textarea name="newGameDescription" id="newGameDescription">${gameDescription.textContent}</textarea>
+                                    
+                                    <label for="newGameImageUrl">Image URL *</label>
+                                    <input type="text" name="newGameImageUrl" id="newGameImageUrl" value="${gameImageURL.src}"/>
+                                    
+                                    <button class="save-btn">Save Changes</button>
+                                    <button class="cancel-btn">Cancel</button>`;
     gameContainer.appendChild(updatedGameElement);
     gameContainer.querySelector('.cancel-btn').addEventListener('click', function(event){
         event.preventDefault();
         removeDeletedElementFromDOM(updatedGameElement);
     });
 
-    gameContainer.querySelector('.update-btn').addEventListener('click', function(){
+    gameContainer.querySelector('.save-btn').addEventListener('click', function(event){
+        event.preventDefault();
+
         const updatedGameTitle = document.querySelector('#newGameTitle');
         const updatedGameDescription = document.querySelector('#newGameDescription');
         const updatedGameImageUrl = document.querySelector('#newGameImageUrl');
@@ -51,9 +57,9 @@ function createDomElement(gameContainer){
         urlencoded.append("description", updatedGameDescription.value);
         urlencoded.append("imageUrl", updatedGameImageUrl.value);
         
-        removeDeletedElementFromDOM(updateGameElement);
+        removeDeletedElementFromDOM(updatedGameElement);
         (async function(){
-            const editForm = await apiUrl.updateGameRequest(gameContainer.id, urlencoded);
+            const editForm = await apiURL.updateGameRequest(gameContainer.id, urlencoded);
             return editForm;
         })();
     });
@@ -92,11 +98,62 @@ document.querySelector(".submitBtn").addEventListener("click", function(event){
         urlencoded.append("imageUrl", newGame.gameImageUrl.value);
         urlencoded.append("description", newGame.gameDescription.value);
 
-       (async function createGame(){
-           const request = await apiUrl.createGameRequest(urlencoded)
+       (async function gameCreate(){
+           const request = await apiURL.createGameRequest(urlencoded)
            console.log(request);
            const newGameDom = newGame.displayCreatedGame(request);
            document.querySelector('.container').appendChild(newGameDom);
        })
     }
 })
+
+function createGameForm(title, releaseDate, genre, publisher, imageUrl, description) {
+    this.title = title;
+    this.releaseDate = releaseDate;
+    this.genre = genre;
+    this.publisher = publisher;
+    this.imageUrl = imageUrl;
+    this.description = description;
+}
+
+createGameForm.prototype.validateFormElement = function(inputElement, errorMessage) {
+    if(inputElement.value === "") {
+        if(!document.querySelector('[rel="' + inputElement.id + '"]')){
+            buildErrorMessage(inputElement, errorMessage);
+        }
+    } else {
+        if(document.querySelector('[rel="' + inputElement.id + '"]')){
+            console.log("the error is erased!");
+            document.querySelector('[rel="' + inputElement.id + '"]').remove();
+            inputElement.classList.remove("inputError");
+        }
+    } 
+}
+
+createGameForm.prototype.validateReleaseTimestampElement = function (inputElement, errorMessage){
+    if(isNaN(inputElement.value) && inputElement.value !== "") {
+        buildErrorMessage(inputElement, errorMessage);
+    }
+}
+
+createGameForm.prototype.buildErrorMessage = function (inputEl, errosMsg){
+    inputEl.classList.add("inputError");
+    const errorMsgElement = document.createElement("span");
+    errorMsgElement.setAttribute("rel", inputEl.id);
+    errorMsgElement.classList.add("errorMsg");
+    errorMsgElement.innerHTML = errosMsg;
+    inputEl.after(errorMsgElement);
+}
+
+createGameForm.prototype.displayCreatedGame = function(request) {
+    const gameELement = document.createElement("div");
+    gameELement.className = "game-box";
+    gameELement.setAttribute("id", `${request._id}`)
+    gameELement.innerHTML = `<h1>${request.title}</h1> 
+                            <img src="${request.imageUrl}" />
+                            <p>${request.description}</p> 
+                            <button class="delete-btn">Delete Game</button>
+                            <button class="edit-btn">Edit Game</button>`;
+
+    return gameELement;
+}
